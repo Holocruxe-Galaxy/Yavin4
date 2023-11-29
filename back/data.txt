@@ -5,3 +5,4 @@ Tell me a joke.::Why don't scientists trust atoms? Because they make up everythi
 What is the capital of France?::The capital of France is Paris.
 Who wrote 'Romeo and Juliet'?::'Romeo and Juliet' was written by William Shakespeare.
 what is my personal computer?::Acer predator helios 300.
+what is my favorite food?::Chicken lasagna
