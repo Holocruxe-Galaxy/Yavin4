@@ -1,0 +1,7 @@
+What is your name?::My name is ChatGPT.
+How are you?::I am an AI, so I don't have feelings, but I'm functioning properly!
+What can you do?::I can answer questions, provide information, and have a friendly conversation with you.
+Tell me a joke.::Why don't scientists trust atoms? Because they make up everything!
+What is the capital of France?::The capital of France is Paris.
+Who wrote 'Romeo and Juliet'?::'Romeo and Juliet' was written by William Shakespeare.
+what is my personal computer?::Acer predator helios 300.

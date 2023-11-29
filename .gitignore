@@ -1,0 +1,18 @@
+# Ignore virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Ignore node modules in front end
+/front/node_modules/
+
+# Ignore database files
+*.db
+*.sqlite
+
+# Ignore environment variables
+.env
+
+# Ignore other unnecessary files
+*.log
+.DS_Store
