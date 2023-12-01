@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from main import generate_response, store_in_db
 import sys
+import sqlite3
 
 print("Using Python at:", sys.executable)
 print("Python version:", sys.version)
