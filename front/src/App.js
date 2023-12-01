@@ -49,8 +49,12 @@ handleSubmit = async () => {
 };
 
 storeInDatabase = async () => {
-  const question = document.getElementById('question').value;
-  const answer = document.getElementById('answer').value;
+  const questionInput = document.getElementById('question');
+  const answerInput = document.getElementById('answer');
+  const question = questionInput.value;
+  const answer = answerInput.value;
+
+  if (question.trim() === "" || answer.trim() === "") return;
 
   try {
     await fetch('http://localhost:5000/store', {
@@ -62,12 +66,18 @@ storeInDatabase = async () => {
         question: question,
         answer: answer
       })
-    });  
+    });
+
+    questionInput.value = '';
+    answerInput.value = '';
+
+    this.toggleDatabaseInputs();
 
   } catch (error) {
     console.error("Error storing data:", error);
   }
 }
+
 
 toggleDatabaseInputs = () => {
   this.setState(prevState => ({
