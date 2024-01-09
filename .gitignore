@@ -2,7 +2,7 @@
 venv/
 __pycache__/
 *.pyc
-
+/_env
 # Ignore node modules in front end
 /front/node_modules/
 
