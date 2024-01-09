@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 
 # Function to calculate the directory size
 def get_dir_size(directory):
