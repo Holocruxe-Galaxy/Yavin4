@@ -1,12 +1,12 @@
+import sys
+print(sys.path)
 import os
-from fuzzywuzzy import process
+from fuzzywuzzy import process, fuzz
 import sqlite3
 from langchain.llms import OpenAI
 from dotenv import load_dotenv
 from googletrans import Translator, LANGUAGES
-from sentence_transformers import SentenceTransformer, util
 
-model = SentenceTransformer('sentence-transformers/multi-qa-MiniLM-L6-cos-v1')
 
 translator = Translator()
 load_dotenv()
@@ -17,23 +17,24 @@ def get_db_response(cursor, user_input):
    
     db_questions = [q for q, _ in db_qa_pairs]
 
-    best_match = get_semantic_match(user_input, db_questions)
+    best_match = get_fuzzy_match(user_input, db_questions)
     
     if best_match['score'] > 0.75:
-    
         matched_question = best_match['text']
         answer = next((a for q, a in db_qa_pairs if q == matched_question), None)
         return answer
 
     return None
 
-def get_semantic_match(query, questions):    
-    query_embedding = model.encode(query, convert_to_tensor=True)
-    question_embeddings = model.encode(questions, convert_to_tensor=True)        
-    cosine_scores = util.pytorch_cos_sim(query_embedding, question_embeddings)    
-    best_match_index = cosine_scores.argmax()
-    best_match_score = cosine_scores[0][best_match_index].item()   
-    return {'text': questions[best_match_index], 'score': best_match_score}
+def get_fuzzy_match(query, questions):
+    highest_score = 0
+    best_match = None
+    for question in questions:
+        score = fuzz.token_set_ratio(query, question)
+        if score > highest_score:
+            highest_score = score
+            best_match = question
+    return {'text': best_match, 'score': highest_score / 100.0}
 
 
 def translate_text(text, src_language="auto", dest_language="en"):
@@ -49,8 +50,9 @@ def translate_text(text, src_language="auto", dest_language="en"):
         print(f"Error in translation: {e}")
         return f"Translation error: {e}"
 
-def get_closest_match(query, choices, limit=1):
-    return process.extractOne(query, choices)
+def get_closest_match(query, choices):
+    best_match, score = process.extractOne(query, choices)
+    return {'text': best_match, 'score': score / 100.0}
 
 def load_txt_data(filepath):
     qa_pairs = []
@@ -63,7 +65,7 @@ def load_txt_data(filepath):
 
 def get_answer(cursor, user_input, txt_qa_pairs):
     questions = [q for q, _ in txt_qa_pairs]
-    best_match = get_semantic_match(user_input, questions)
+    best_match = get_fuzzy_match(user_input, questions)
     if best_match['score'] > 0.75:  
         matched_question = best_match['text']
         answer = next(a for q, a in txt_qa_pairs if q == matched_question)
@@ -99,8 +101,8 @@ def store_in_db(conn, cursor, question, answer, txt_filepath='data.txt'):
    
     txt_qa_pairs = load_txt_data(txt_filepath)
     txt_questions = [q for q, _ in txt_qa_pairs]
-    semantic_match = get_semantic_match(question, txt_questions)
-    if semantic_match['score'] < 0.75:      
+    fuzzy_match = get_fuzzy_match(question, txt_questions)
+    if fuzzy_match['score'] < 0.75:      
         cursor.execute("INSERT INTO personal_info (question, answer) VALUES (?, ?)", (question, answer))
         conn.commit()
 
