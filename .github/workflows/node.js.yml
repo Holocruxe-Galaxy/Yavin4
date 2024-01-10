@@ -1,0 +1,21 @@
+name: CICD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v3
+    - name: Change directory and Create virtualenv and activate
+      run: cd back && virtualenv -p python3 venv
+    - name: Activate venv && Install Dependencies
+      run: cd back && source venv/bin/activate && pip install -r requirements.txt
+      env: 
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    - name: Stop pm2
+      run: pm2 delete --silent yavin4-api
+    - name: Run Server
+      run: cd back && source venv/bin/activate && pm2 start server.py --name=yavin4-api --interpreter=python3
