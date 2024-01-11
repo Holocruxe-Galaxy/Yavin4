@@ -137,17 +137,16 @@ def detect_language(text):
         return detect(text)
     except Exception as e:
         print(f"Error detecting language: {e}")
-        return "en"  # Default to English if detection fails
+        return "en" 
 
 
 def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
     target_language = 'en'
     
-    # Use the detect_language function
     source_language = detect_language(user_input)
     translated_input = user_input
+    
     try:
-        # Translate the input if the source language is not the target language
         if source_language != target_language:
             translated_input = translate_text(user_input, src_language=source_language, dest_language=target_language)
         
