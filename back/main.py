@@ -3,12 +3,13 @@ print(sys.path)
 import os
 from fuzzywuzzy import process, fuzz
 import sqlite3
-from langchain.llms import OpenAI
+from langchain_openai import OpenAI
 from dotenv import load_dotenv
-from googletrans import Translator, LANGUAGES
+from deep_translator import GoogleTranslator
+from langdetect import detect
 
 
-translator = Translator()
+translator = GoogleTranslator()
 load_dotenv()
 
 def get_db_response(cursor, user_input):    
@@ -39,13 +40,10 @@ def get_fuzzy_match(query, questions):
 
 def translate_text(text, src_language="auto", dest_language="en"):
     try:
-        
-        if dest_language not in LANGUAGES.values():
-            print(f"Warning: Unsupported language code: {dest_language}. Proceeding with translation anyway.")
-        
-        translation = translator.translate(text, src=src_language, dest=dest_language)
-        print(f"Translation: '{text}' from {src_language} to {dest_language} -> '{translation.text}'") 
-        return translation.text
+        translator = GoogleTranslator(source=src_language, target=dest_language)
+        translation = translator.translate(text)
+        print(f"Translation: '{text}' from {src_language} to {dest_language} -> '{translation}'")
+        return translation
     except Exception as e:
         print(f"Error in translation: {e}")
         return f"Translation error: {e}"
@@ -134,16 +132,22 @@ def chat_with_assistant(txt_filepath):
     conn.close()
     print("Chat session ended.")
 
+def detect_language(text):
+    try:
+        return detect(text)
+    except Exception as e:
+        print(f"Error detecting language: {e}")
+        return "en"  # Default to English if detection fails
+
 
 def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
     target_language = 'en'
     
-    source_language = 'auto'
+    # Use the detect_language function
+    source_language = detect_language(user_input)
     translated_input = user_input
-    
     try:
-        detected_language_result = translator.detect(user_input)
-        source_language = detected_language_result.lang
+        # Translate the input if the source language is not the target language
         if source_language != target_language:
             translated_input = translate_text(user_input, src_language=source_language, dest_language=target_language)
         
@@ -159,17 +163,15 @@ def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
             if txt_response:
                 return translate_back_if_needed(txt_response, source_language)
             
-            llm_response = llm(translated_input)
+            llm = OpenAI(temperature=0.5)
+            llm_response = llm.invoke(user_input)
             store_in_db(conn, cursor, translated_input, llm_response)
             return translate_back_if_needed(llm_response, source_language)
-
-    except TimeoutError as e:
-        print(f"Timeout during response generation: {e}")
-        return "The request timed out. Please try again later."
 
     except Exception as e:
         print(f"Error in generate_response: {e}")
         return "An error occurred while processing your request. Please try again."
+
 
 def translate_back_if_needed(response, source_language):
     target_language = 'en'
