@@ -1,14 +1,15 @@
+import sys
+print(sys.path)
 import os
-from fuzzywuzzy import process
+from fuzzywuzzy import process, fuzz
 import sqlite3
-from langchain.llms import OpenAI
+from langchain_openai import OpenAI
 from dotenv import load_dotenv
-from googletrans import Translator, LANGUAGES
-from sentence_transformers import SentenceTransformer, util
+from deep_translator import GoogleTranslator
+from langdetect import detect
 
-model = SentenceTransformer('sentence-transformers/multi-qa-MiniLM-L6-cos-v1')
 
-translator = Translator()
+translator = GoogleTranslator()
 load_dotenv()
 
 def get_db_response(cursor, user_input):    
@@ -17,40 +18,39 @@ def get_db_response(cursor, user_input):
    
     db_questions = [q for q, _ in db_qa_pairs]
 
-    best_match = get_semantic_match(user_input, db_questions)
+    best_match = get_fuzzy_match(user_input, db_questions)
     
     if best_match['score'] > 0.75:
-    
         matched_question = best_match['text']
         answer = next((a for q, a in db_qa_pairs if q == matched_question), None)
         return answer
 
     return None
 
-def get_semantic_match(query, questions):    
-    query_embedding = model.encode(query, convert_to_tensor=True)
-    question_embeddings = model.encode(questions, convert_to_tensor=True)        
-    cosine_scores = util.pytorch_cos_sim(query_embedding, question_embeddings)    
-    best_match_index = cosine_scores.argmax()
-    best_match_score = cosine_scores[0][best_match_index].item()   
-    return {'text': questions[best_match_index], 'score': best_match_score}
+def get_fuzzy_match(query, questions):
+    highest_score = 0
+    best_match = None
+    for question in questions:
+        score = fuzz.token_set_ratio(query, question)
+        if score > highest_score:
+            highest_score = score
+            best_match = question
+    return {'text': best_match, 'score': highest_score / 100.0}
 
 
 def translate_text(text, src_language="auto", dest_language="en"):
     try:
-        
-        if dest_language not in LANGUAGES.values():
-            print(f"Warning: Unsupported language code: {dest_language}. Proceeding with translation anyway.")
-        
-        translation = translator.translate(text, src=src_language, dest=dest_language)
-        print(f"Translation: '{text}' from {src_language} to {dest_language} -> '{translation.text}'") 
-        return translation.text
+        translator = GoogleTranslator(source=src_language, target=dest_language)
+        translation = translator.translate(text)
+        print(f"Translation: '{text}' from {src_language} to {dest_language} -> '{translation}'")
+        return translation
     except Exception as e:
         print(f"Error in translation: {e}")
         return f"Translation error: {e}"
 
-def get_closest_match(query, choices, limit=1):
-    return process.extractOne(query, choices)
+def get_closest_match(query, choices):
+    best_match, score = process.extractOne(query, choices)
+    return {'text': best_match, 'score': score / 100.0}
 
 def load_txt_data(filepath):
     qa_pairs = []
@@ -63,7 +63,7 @@ def load_txt_data(filepath):
 
 def get_answer(cursor, user_input, txt_qa_pairs):
     questions = [q for q, _ in txt_qa_pairs]
-    best_match = get_semantic_match(user_input, questions)
+    best_match = get_fuzzy_match(user_input, questions)
     if best_match['score'] > 0.75:  
         matched_question = best_match['text']
         answer = next(a for q, a in txt_qa_pairs if q == matched_question)
@@ -99,8 +99,8 @@ def store_in_db(conn, cursor, question, answer, txt_filepath='data.txt'):
    
     txt_qa_pairs = load_txt_data(txt_filepath)
     txt_questions = [q for q, _ in txt_qa_pairs]
-    semantic_match = get_semantic_match(question, txt_questions)
-    if semantic_match['score'] < 0.75:      
+    fuzzy_match = get_fuzzy_match(question, txt_questions)
+    if fuzzy_match['score'] < 0.75:      
         cursor.execute("INSERT INTO personal_info (question, answer) VALUES (?, ?)", (question, answer))
         conn.commit()
 
@@ -132,16 +132,21 @@ def chat_with_assistant(txt_filepath):
     conn.close()
     print("Chat session ended.")
 
+def detect_language(text):
+    try:
+        return detect(text)
+    except Exception as e:
+        print(f"Error detecting language: {e}")
+        return "en" 
+
 
 def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
     target_language = 'en'
     
-    source_language = 'auto'
+    source_language = detect_language(user_input)
     translated_input = user_input
     
     try:
-        detected_language_result = translator.detect(user_input)
-        source_language = detected_language_result.lang
         if source_language != target_language:
             translated_input = translate_text(user_input, src_language=source_language, dest_language=target_language)
         
@@ -157,17 +162,15 @@ def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
             if txt_response:
                 return translate_back_if_needed(txt_response, source_language)
             
-            llm_response = llm(translated_input)
+            llm = OpenAI(temperature=0.5)
+            llm_response = llm.invoke(user_input)
             store_in_db(conn, cursor, translated_input, llm_response)
             return translate_back_if_needed(llm_response, source_language)
-
-    except TimeoutError as e:
-        print(f"Timeout during response generation: {e}")
-        return "The request timed out. Please try again later."
 
     except Exception as e:
         print(f"Error in generate_response: {e}")
         return "An error occurred while processing your request. Please try again."
+
 
 def translate_back_if_needed(response, source_language):
     target_language = 'en'
