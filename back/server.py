@@ -10,9 +10,11 @@ print("Python version:", sys.version)
 app = Flask(__name__)
 CORS(app)
 
+
 @app.route('/')
 def home():
     return "Hello World"
+
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -32,6 +34,7 @@ def chat():
         print(f"Error during response generation: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/store', methods=['POST'])
 def store():
     data = request.json
@@ -44,5 +47,6 @@ def store():
 
     return jsonify(message="Stored successfully")
 
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(port=5000)

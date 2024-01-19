@@ -37,7 +37,6 @@ def get_fuzzy_match(query, questions):
             best_match = question
     return {'text': best_match, 'score': highest_score / 100.0}
 
-
 def translate_text(text, src_language="auto", dest_language="en"):
     try:
         translator = GoogleTranslator(source=src_language, target=dest_language)
@@ -89,13 +88,12 @@ def initialize_db():
         raise e 
     return conn, cursor 
 
-
 def get_from_db(cursor, question):
     cursor.execute("SELECT answer FROM personal_info WHERE question = ?", (question,))
     result = cursor.fetchone()
     return result[0] if result else None
 
-def store_in_db(conn, cursor, question, answer, txt_filepath='data.txt'):
+def store_in_db(conn, cursor, question, answer, txt_filepath='back/data.txt'):
    
     txt_qa_pairs = load_txt_data(txt_filepath)
     txt_questions = [q for q, _ in txt_qa_pairs]
@@ -150,7 +148,7 @@ def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
         if source_language != target_language:
             translated_input = translate_text(user_input, src_language=source_language, dest_language=target_language)
         
-        with sqlite3.connect('personal_assistant.db') as conn:
+        with sqlite3.connect        ('personal_assistant.db') as conn:
             cursor = conn.cursor()
             
             db_response = get_db_response(cursor, translated_input)
@@ -182,4 +180,4 @@ def translate_back_if_needed(response, source_language):
 
 
 if __name__ == "__main__":
-    chat_with_assistant('data.txt')
+    chat_with_assistant('back/data.txt')

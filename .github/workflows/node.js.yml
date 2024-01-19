@@ -14,7 +14,7 @@ jobs:
     - name: Activate venv && Install Dependencies
       run: cd back && source venv/bin/activate && pip install -r requirements.txt
       env: 
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OPENAI_API_KEY: ${{ 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 }}
     - name: Stop pm2
       run: pm2 delete --silent yavin4-api
     - name: Run Server
