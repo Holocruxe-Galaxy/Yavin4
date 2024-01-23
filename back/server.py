@@ -27,7 +27,7 @@ def chat():
         return jsonify({"error": "No message provided"}), 400
 
     try:
-        response = generate_response(message, txt_filepath='data.txt')
+        response = generate_response(message, txt_filepath='back/data.txt')
         print(f"Generated response: {response}")
         return jsonify(response=response)
     except Exception as e:

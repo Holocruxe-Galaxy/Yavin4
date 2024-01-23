@@ -138,7 +138,7 @@ def detect_language(text):
         return "en" 
 
 
-def generate_response(user_input, txt_filepath='data.txt', retry_attempts=3):
+def generate_response(user_input, txt_filepath='back/data.txt', retry_attempts=3):
     target_language = 'en'
     
     source_language = detect_language(user_input)
