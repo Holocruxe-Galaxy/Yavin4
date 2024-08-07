@@ -1,18 +1,69 @@
-# Ignore virtual environment
-env/
+# Environment directories
+_env/
+
+# Serverless directories
+.serverless/
+
+# Node.js dependencies
+node_modules/
+
+# Python bytecode files and directories
 __pycache__/
-*.pyc
-/_env
-# Ignore node modules in front end
-/front/node_modules/
+*.py[cod]
+*$py.class
 
-# Ignore database files
-*.db
-*.sqlite
+# C extensions
+*.so
 
-# Ignore environment variables
-.env
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# Ignore other unnecessary files
-*.log
+# Install logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Sphinx documentation
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*~
+
+# macOS
 .DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
